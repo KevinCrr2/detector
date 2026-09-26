@@ -249,18 +249,48 @@
     requestAnimationFrame(detectar);
   }
 
-  function mostrarCodigo(value) {
-    codeElement.textContent = value;
-    statusElement.textContent = "Código leído correctamente";
+  async function mostrarCodigo(value) {
+  codeElement.textContent = value;
+  statusElement.textContent = "Buscando producto...";
 
-    // Vibración corta
-    if (navigator.vibrate) {
-      navigator.vibrate(150);
+  if (navigator.vibrate) {
+    navigator.vibrate(150);
+  }
+
+  reproducirBeep();
+
+  try {
+    const { data, error } = await supabase
+      .from("productos")
+      .select("codigo_barras, nombre, marca, precio, imagen")
+      .eq("codigo_barras", value)
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      statusElement.textContent = "Error consultando la base de datos";
+      return;
     }
 
-    // Beep
-    reproducirBeep();
+    if (!data) {
+      statusElement.textContent = "Producto no encontrado";
+      return;
+    }
+
+    statusElement.textContent = "Producto encontrado";
+
+    document.getElementById("producto").innerHTML = `
+      <strong>${data.nombre}</strong>
+      <br>
+      <span>${data.marca || ""}</span>
+      ${data.precio ? `<br><b>$${data.precio}</b>` : ""}
+    `;
+
+  } catch (error) {
+    console.error(error);
+    statusElement.textContent = "Error de conexión";
   }
+}
 
   function reproducirBeep() {
     try {
