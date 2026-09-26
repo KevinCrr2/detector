@@ -150,12 +150,27 @@
     <div id="code">—</div>
   </div>
 
+  <div class="result">
+  <small>Producto</small>
+  <div id="producto">—</div>
+</div>
+
   <button id="startButton" style="display:none;">Activar cámara</button>
 
   <div class="error" id="error"></div>
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+
+  const SUPABASE_URL = "https://rmfgtifajffxbvcgfuep.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_a_Y_DO0ZDmo_dS4_T2RugA_kWRjMFWT";
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+  
   const video = document.getElementById("camera");
   const codeElement = document.getElementById("code");
   const statusElement = document.getElementById("status");
