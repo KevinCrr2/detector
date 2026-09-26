@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,9 +13,6 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Lector de códigos -->
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
   <style>
     * {
       box-sizing: border-box;
@@ -28,6 +24,8 @@
       background: #111;
       color: white;
       font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
     }
 
     header {
@@ -43,25 +41,56 @@
     }
 
     .scanner {
+      position: relative;
       width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 65vh;
       background: #000;
       overflow: hidden;
     }
 
-    #reader {
+    video {
       width: 100%;
-      min-height: 320px;
-      background: #000;
-    }
-
-    #reader video {
-      width: 100% !important;
-      height: auto !important;
+      height: 100%;
       object-fit: cover;
     }
 
+    .scan-frame {
+      position: absolute;
+      width: 72%;
+      height: 28%;
+      left: 14%;
+      top: 36%;
+      border: 2px solid #00e676;
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,.35);
+      pointer-events: none;
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 2px;
+      background: #00e676;
+      box-shadow: 0 0 8px #00e676;
+      animation: scan 1.8s infinite ease-in-out;
+    }
+
+    @keyframes scan {
+      0%, 100% {
+        transform: translateY(-45px);
+      }
+
+      50% {
+        transform: translateY(45px);
+      }
+    }
+
     .bottom {
-      padding: 20px;
+      flex: 1;
+      padding: 22px 20px;
       display: flex;
       flex-direction: column;
       gap: 14px;
@@ -71,7 +100,6 @@
       text-align: center;
       color: #aaa;
       font-size: 14px;
-      min-height: 20px;
     }
 
     .result {
@@ -85,7 +113,7 @@
     .result small {
       display: block;
       color: #999;
-      margin-bottom: 8px;
+      margin-bottom: 7px;
     }
 
     #code {
@@ -96,21 +124,21 @@
 
     #producto {
       font-size: 18px;
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
     #producto strong {
       font-size: 21px;
     }
 
-    #producto .marca {
+    .marca {
       color: #aaa;
     }
 
-    #producto .precio {
-      font-size: 22px;
-      font-weight: bold;
+    .precio {
       margin-top: 5px;
+      font-size: 21px;
+      font-weight: bold;
     }
 
     button {
@@ -129,11 +157,6 @@
       transform: scale(.98);
     }
 
-    #detener {
-      background: #333;
-      color: white;
-    }
-
     .error {
       color: #ff5252;
       text-align: center;
@@ -141,31 +164,12 @@
       line-height: 1.4;
     }
 
-    .encontrado {
+    .producto-ok {
       border-color: #00e676;
     }
 
-    .no-encontrado {
+    .producto-error {
       border-color: #ff5252;
-    }
-
-    .info {
-      color: #aaa;
-      text-align: center;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    /* Ocultar elementos propios de html5-qrcode que no necesitamos */
-    #reader__dashboard_section_csr button {
-      width: auto;
-      padding: 10px 15px;
-      margin: 5px;
-      background: #00e676;
-    }
-
-    #reader__dashboard_section_swaplink {
-      color: #00e676 !important;
     }
   </style>
 </head>
@@ -176,41 +180,79 @@
   <h1>📷 Escáner de productos</h1>
 </header>
 
+
 <div class="scanner">
-  <div id="reader"></div>
+
+  <video
+    id="camera"
+    autoplay
+    muted
+    playsinline>
+  </video>
+
+  <div class="scan-frame">
+    <div class="scan-line"></div>
+  </div>
+
 </div>
+
 
 <div class="bottom">
 
   <div class="status" id="status">
-    Preparando cámara...
+    Iniciando cámara...
   </div>
+
 
   <div class="result">
-    <small>Código detectado</small>
-    <div id="code">—</div>
+
+    <small>
+      Código detectado
+    </small>
+
+    <div id="code">
+      —
+    </div>
+
   </div>
 
-  <div class="result" id="productoBox">
-    <small>Producto</small>
+
+  <div
+    class="result"
+    id="productoBox">
+
+    <small>
+      Producto
+    </small>
 
     <div id="producto">
-      Escaneá un producto
+      —
     </div>
+
   </div>
 
-  <button id="escanearNuevamente" style="display:none;">
+
+  <button
+    id="startButton"
+    style="display:none;">
+
+    Activar cámara
+
+  </button>
+
+
+  <button
+    id="againButton"
+    style="display:none;">
+
     📷 Escanear nuevamente
+
   </button>
 
-  <button id="detener" style="display:none;">
-    Detener cámara
-  </button>
 
-  <div class="error" id="error"></div>
-
-  <div class="info">
-    Apuntá la cámara al código de barras del producto.
+  <div
+    class="error"
+    id="error">
   </div>
 
 </div>
@@ -230,10 +272,12 @@
   const SUPABASE_ANON_KEY =
     "sb_publishable_a_Y_DO0ZDmo_dS4_T2RugA_kWRjMFWT";
 
-  const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
+
+  const supabaseClient =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
 
 
   /*
@@ -242,11 +286,23 @@
   =====================================================
   */
 
-  const statusElement =
-    document.getElementById("status");
+  const video =
+    document.getElementById("camera");
 
   const codeElement =
     document.getElementById("code");
+
+  const statusElement =
+    document.getElementById("status");
+
+  const errorElement =
+    document.getElementById("error");
+
+  const startButton =
+    document.getElementById("startButton");
+
+  const againButton =
+    document.getElementById("againButton");
 
   const productoElement =
     document.getElementById("producto");
@@ -254,205 +310,238 @@
   const productoBox =
     document.getElementById("productoBox");
 
-  const errorElement =
-    document.getElementById("error");
 
-  const escanearNuevamente =
-    document.getElementById("escanearNuevamente");
+  /*
+  =====================================================
+  VARIABLES DE CÁMARA
+  =====================================================
+  */
 
-  const detenerButton =
-    document.getElementById("detener");
+  let detector = null;
+
+  let stream = null;
+
+  let scanning = false;
+
+  let lastCode = "";
+
+  let lastTime = 0;
+
+  let buscandoProducto = false;
 
 
   /*
   =====================================================
-  VARIABLES
+  INICIAR CÁMARA
   =====================================================
   */
 
-  let scanner = null;
+  async function iniciarCamara() {
 
-  let procesando = false;
+    try {
 
-  let ultimoCodigo = "";
-
-
-  /*
-  =====================================================
-  INICIAR ESCÁNER
-  =====================================================
-  */
-
-  async function iniciarScanner() {
-
-    errorElement.textContent = "";
-
-    productoElement.innerHTML =
-      "Apuntá la cámara al código de barras.";
-
-    productoBox.classList.remove(
-      "encontrado",
-      "no-encontrado"
-    );
-
-    statusElement.textContent =
-      "Solicitando acceso a la cámara...";
-
-
-    /*
-    Verificar HTTPS
-    */
-
-    if (
-      location.protocol !== "https:" &&
-      location.hostname !== "localhost" &&
-      location.hostname !== "127.0.0.1"
-    ) {
-
-      errorElement.textContent =
-        "La cámara necesita HTTPS. Si estás usando GitHub Pages, Vercel o Netlify, asegurate de abrir la URL HTTPS.";
+      errorElement.textContent = "";
 
       statusElement.textContent =
-        "Se necesita una conexión segura.";
+        "Solicitando cámara...";
 
-      return;
+
+      /*
+      IMPORTANTE:
+      mantenemos exactamente el sistema
+      que usabas antes.
+      */
+
+      stream =
+        await navigator.mediaDevices.getUserMedia({
+
+          video: {
+
+            facingMode: {
+              ideal: "environment"
+            },
+
+            width: {
+              ideal: 1280
+            },
+
+            height: {
+              ideal: 720
+            }
+
+          },
+
+          audio: false
+
+        });
+
+
+      video.srcObject =
+        stream;
+
+
+      await video.play();
+
+
+      /*
+      Verificar BarcodeDetector
+      */
+
+      if (!("BarcodeDetector" in window)) {
+
+        throw new Error(
+          "Este navegador no soporta BarcodeDetector. Probá con Chrome en Android."
+        );
+
+      }
+
+
+      detector =
+        new BarcodeDetector({
+
+          formats: [
+
+            "ean_13",
+            "ean_8",
+            "upc_a",
+            "upc_e",
+            "code_128",
+            "code_39",
+            "itf"
+
+          ]
+
+        });
+
+
+      statusElement.textContent =
+        "Apuntá la cámara al código de barras";
+
+
+      startButton.style.display =
+        "none";
+
+
+      againButton.style.display =
+        "none";
+
+
+      scanning = true;
+
+
+      detectar();
+
     }
 
 
-    /*
-    Crear scanner
-    */
+    catch (error) {
 
-    if (!scanner) {
+      console.error(error);
 
-      scanner = new Html5Qrcode("reader");
+      scanning = false;
+
+
+      statusElement.textContent =
+        "No se pudo iniciar la cámara";
+
+
+      errorElement.textContent =
+        error.message ||
+        "Tenés que permitir el acceso a la cámara.";
+
+
+      startButton.style.display =
+        "block";
+
+    }
+
+  }
+
+
+  /*
+  =====================================================
+  DETECTAR CÓDIGO
+  =====================================================
+  */
+
+  async function detectar() {
+
+    if (
+      !scanning ||
+      !detector
+    ) {
+
+      return;
 
     }
 
 
     try {
 
-      const cameras =
-        await Html5Qrcode.getCameras();
+      if (
+        video.readyState >= 2
+      ) {
+
+        const barcodes =
+          await detector.detect(video);
 
 
-      if (!cameras || cameras.length === 0) {
+        if (
+          barcodes.length > 0
+        ) {
 
-        throw new Error(
-          "No se encontró ninguna cámara en este dispositivo."
-        );
+          const value =
+            barcodes[0].rawValue;
+
+
+          if (value) {
+
+            const now =
+              Date.now();
+
+
+            /*
+            Evita detectar
+            constantemente el mismo código.
+            */
+
+            if (
+              value !== lastCode ||
+              now - lastTime > 1500
+            ) {
+
+              lastCode =
+                value;
+
+              lastTime =
+                now;
+
+
+              mostrarCodigo(value);
+
+            }
+
+          }
+
+        }
 
       }
 
+    }
 
-      /*
-      Buscar cámara trasera
-      */
-
-      let camaraTrasera = cameras.find(camera => {
-
-        const nombre =
-          camera.label.toLowerCase();
-
-        return (
-          nombre.includes("back") ||
-          nombre.includes("trasera") ||
-          nombre.includes("rear") ||
-          nombre.includes("environment")
-        );
-
-      });
-
-
-      /*
-      Si no encuentra trasera,
-      utiliza la primera disponible.
-      */
-
-      const cameraId =
-        camaraTrasera
-          ? camaraTrasera.id
-          : cameras[0].id;
-
-
-      statusElement.textContent =
-        "Cámara activada. Apuntá al código.";
-
-
-      await scanner.start(
-
-        cameraId,
-
-        {
-          fps: 10,
-
-          qrbox: function(viewfinderWidth, viewfinderHeight) {
-
-            const size =
-              Math.min(
-                viewfinderWidth * 0.85,
-                180
-              );
-
-            return {
-              width: size,
-              height: size * 0.45
-            };
-
-          },
-
-          aspectRatio: 1.0,
-
-          formatsToSupport: [
-
-            Html5QrcodeSupportedFormats.EAN_13,
-
-            Html5QrcodeSupportedFormats.EAN_8,
-
-            Html5QrcodeSupportedFormats.UPC_A,
-
-            Html5QrcodeSupportedFormats.UPC_E,
-
-            Html5QrcodeSupportedFormats.CODE_128,
-
-            Html5QrcodeSupportedFormats.CODE_39,
-
-            Html5QrcodeSupportedFormats.ITF
-
-          ]
-
-        },
-
-        codigoDetectado,
-
-        errorDeEscaneo
-
-      );
-
-
-      detenerButton.style.display =
-        "block";
-
-
-      escanearNuevamente.style.display =
-        "none";
-
-
-    } catch (error) {
+    catch (error) {
 
       console.error(
-        "Error iniciando cámara:",
+        "Error leyendo código:",
         error
       );
 
-      statusElement.textContent =
-        "No se pudo abrir la cámara.";
-
-      errorElement.textContent =
-        error.message ||
-        "Tenés que permitir el acceso a la cámara.";
-
     }
+
+
+    requestAnimationFrame(
+      detectar
+    );
 
   }
 
@@ -463,53 +552,15 @@
   =====================================================
   */
 
-  async function codigoDetectado(decodedText) {
-
-    /*
-    Evitar múltiples lecturas
-    */
-
-    if (procesando) {
-      return;
-    }
-
-
-    if (
-      decodedText === ultimoCodigo
-    ) {
-
-      return;
-
-    }
-
-
-    procesando = true;
-
-    ultimoCodigo =
-      decodedText;
-
-
-    console.log(
-      "Código detectado:",
-      decodedText
-    );
-
-
-    /*
-    Mostrar código
-    */
+  async function mostrarCodigo(value) {
 
     codeElement.textContent =
-      decodedText;
+      value;
 
 
     statusElement.textContent =
-      "Código detectado. Buscando producto...";
+      "Código leído. Buscando producto...";
 
-
-    /*
-    Vibración
-    */
 
     if (
       navigator.vibrate
@@ -520,40 +571,15 @@
     }
 
 
-    /*
-    Sonido
-    */
-
     reproducirBeep();
 
 
     /*
-    Detener cámara
-    */
-
-    try {
-
-      await scanner.stop();
-
-      detenerButton.style.display =
-        "none";
-
-    } catch (error) {
-
-      console.log(
-        "No se pudo detener:",
-        error
-      );
-
-    }
-
-
-    /*
-    Buscar en Supabase
+    Buscar automáticamente
     */
 
     await buscarProducto(
-      decodedText
+      value
     );
 
   }
@@ -561,19 +587,37 @@
 
   /*
   =====================================================
-  BUSCAR PRODUCTO
+  BUSCAR PRODUCTO EN SUPABASE
   =====================================================
   */
 
-  async function buscarProducto(codigo) {
+  async function buscarProducto(
+    codigo
+  ) {
+
+    if (
+      buscandoProducto
+    ) {
+
+      return;
+
+    }
+
+
+    buscandoProducto = true;
+
+
+    productoElement.innerHTML =
+      "🔎 Buscando...";
+
+
+    productoBox.classList.remove(
+      "producto-ok",
+      "producto-error"
+    );
+
 
     try {
-
-      console.log(
-        "Buscando:",
-        codigo
-      );
-
 
       const {
         data,
@@ -595,7 +639,7 @@
 
 
       /*
-      Error de Supabase
+      Error
       */
 
       if (error) {
@@ -605,11 +649,14 @@
           error
         );
 
+
         statusElement.textContent =
-          "Error consultando la base de datos.";
+          "Error consultando la base de datos";
+
 
         errorElement.textContent =
           error.message;
+
 
         return;
 
@@ -617,14 +664,15 @@
 
 
       /*
-      Producto inexistente
+      No encontrado
       */
 
       if (!data) {
 
         productoBox.classList.add(
-          "no-encontrado"
+          "producto-error"
         );
+
 
         productoElement.innerHTML = `
 
@@ -641,11 +689,10 @@
 
         `;
 
-        statusElement.textContent =
-          "Producto no encontrado.";
 
-        escanearNuevamente.style.display =
-          "block";
+        statusElement.textContent =
+          "Producto no encontrado";
+
 
         return;
 
@@ -653,11 +700,11 @@
 
 
       /*
-      Producto encontrado
+      Encontrado
       */
 
       productoBox.classList.add(
-        "encontrado"
+        "producto-ok"
       );
 
 
@@ -672,14 +719,18 @@
       `;
 
 
-      if (data.marca) {
+      if (
+        data.marca
+      ) {
 
         html += `
 
           <br>
 
           <span class="marca">
-            ${escaparHTML(data.marca)}
+            ${escaparHTML(
+              data.marca
+            )}
           </span>
 
         `;
@@ -695,7 +746,9 @@
         html += `
 
           <div class="precio">
-            $${formatearPrecio(data.precio)}
+            $${Number(
+              data.precio
+            ).toLocaleString("es-AR")}
           </div>
 
         `;
@@ -711,23 +764,28 @@
         "✅ Producto encontrado";
 
 
-      escanearNuevamente.style.display =
-        "block";
+    }
 
 
-    } catch (error) {
+    catch (error) {
 
-      console.error(
-        "Error:",
-        error
-      );
+      console.error(error);
+
 
       statusElement.textContent =
-        "Error de conexión.";
+        "Error de conexión";
+
 
       errorElement.textContent =
         error.message ||
         "No se pudo consultar el producto.";
+
+    }
+
+
+    finally {
+
+      buscandoProducto = false;
 
     }
 
@@ -740,65 +798,29 @@
   =====================================================
   */
 
-  escanearNuevamente.addEventListener(
+  againButton.addEventListener(
     "click",
-    async function() {
+    function() {
 
-      procesando = false;
+      lastCode = "";
 
-      ultimoCodigo = "";
+      lastTime = 0;
 
       codeElement.textContent =
         "—";
 
-      productoElement.innerHTML =
-        "Apuntá la cámara al código.";
+      productoElement.textContent =
+        "—";
 
       productoBox.classList.remove(
-        "encontrado",
-        "no-encontrado"
+        "producto-ok",
+        "producto-error"
       );
 
       errorElement.textContent = "";
 
-      await iniciarScanner();
-
-    }
-  );
-
-
-  /*
-  =====================================================
-  DETENER
-  =====================================================
-  */
-
-  detenerButton.addEventListener(
-    "click",
-    async function() {
-
-      try {
-
-        if (scanner) {
-
-          await scanner.stop();
-
-        }
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-      detenerButton.style.display =
-        "none";
-
-      escanearNuevamente.style.display =
-        "block";
-
       statusElement.textContent =
-        "Cámara detenida.";
+        "Apuntá la cámara al código de barras";
 
     }
   );
@@ -862,29 +884,9 @@
         audio.currentTime + 0.12
       );
 
-    } catch (error) {
-
-      console.log(
-        "No se pudo reproducir sonido"
-      );
-
     }
 
-  }
-
-
-  /*
-  =====================================================
-  FORMATEAR PRECIO
-  =====================================================
-  */
-
-  function formatearPrecio(precio) {
-
-    return Number(precio)
-      .toLocaleString(
-        "es-AR"
-      );
+    catch (e) {}
 
   }
 
@@ -895,38 +897,62 @@
   =====================================================
   */
 
-  function escaparHTML(valor) {
+  function escaparHTML(
+    valor
+  ) {
 
     return String(valor)
 
-      .replaceAll("&", "&amp;")
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
 
-      .replaceAll("<", "&lt;")
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
 
-      .replaceAll(">", "&gt;")
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
 
-      .replaceAll('"', "&quot;")
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
 
-      .replaceAll("'", "&#039;");
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
 
   }
 
 
   /*
   =====================================================
-  ERROR DE ESCANEO
+  DETENER CÁMARA AL SALIR
   =====================================================
   */
 
-  function errorDeEscaneo(errorMessage) {
+  window.addEventListener(
+    "beforeunload",
+    function() {
 
-    /*
-    No mostramos errores constantemente
-    porque html5-qrcode los genera mientras
-    busca el código.
-    */
+      if (stream) {
 
-  }
+        stream
+          .getTracks()
+          .forEach(
+            track => track.stop()
+          );
+
+      }
+
+    }
+  );
 
 
   /*
@@ -935,15 +961,7 @@
   =====================================================
   */
 
-  window.addEventListener(
-    "load",
-    function() {
-
-      iniciarScanner();
-
-    }
-  );
-
+  iniciarCamara();
 
 </script>
 
