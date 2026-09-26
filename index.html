@@ -184,56 +184,74 @@ const supabase = window.supabase.createClient(
   let lastTime = 0;
 
   async function iniciarCamara() {
-    try {
-      errorElement.textContent = "";
-      statusElement.textContent = "Solicitando cámara...";
+  try {
+    errorElement.textContent = "";
+    statusElement.textContent = "Solicitando cámara...";
 
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      });
-
-      video.srcObject = stream;
-      await video.play();
-
-      if (!("BarcodeDetector" in window)) {
-        throw new Error(
-          "Este navegador no soporta BarcodeDetector. Probá con Chrome en Android."
-        );
-      }
-
-      detector = new BarcodeDetector({
-        formats: [
-          "ean_13",
-          "ean_8",
-          "upc_a",
-          "upc_e",
-          "code_128",
-          "code_39",
-          "itf"
-        ]
-      });
-
-      statusElement.textContent = "Apuntá la cámara al código de barras";
-      startButton.style.display = "none";
-      scanning = true;
-      detectar();
-
-    } catch (error) {
-      console.error(error);
-      scanning = false;
-      statusElement.textContent = "No se pudo iniciar la cámara";
-      errorElement.textContent =
-        error.message ||
-        "Tenés que permitir el acceso a la cámara.";
-      startButton.style.display = "block";
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error(
+        "Este navegador no permite acceder a la cámara. Abrí la página mediante HTTPS o localhost."
+      );
     }
-  }
 
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: {
+          ideal: "environment"
+        }
+      },
+      audio: false
+    });
+
+    video.srcObject = stream;
+
+    await new Promise(resolve => {
+      video.onloadedmetadata = resolve;
+    });
+
+    await video.play();
+
+    statusElement.textContent = "Cámara activada";
+
+    if (!("BarcodeDetector" in window)) {
+      throw new Error(
+        "La cámara funciona, pero este navegador no soporta BarcodeDetector."
+      );
+    }
+
+    detector = new BarcodeDetector({
+      formats: [
+        "ean_13",
+        "ean_8",
+        "upc_a",
+        "upc_e",
+        "code_128",
+        "code_39",
+        "itf"
+      ]
+    });
+
+    statusElement.textContent =
+      "Apuntá la cámara al código de barras";
+
+    startButton.style.display = "none";
+    scanning = true;
+
+    detectar();
+
+  } catch (error) {
+    console.error("ERROR CÁMARA:", error);
+
+    scanning = false;
+
+    statusElement.textContent = "No se pudo iniciar la cámara";
+
+    errorElement.textContent =
+      error.name + ": " + error.message;
+
+    startButton.style.display = "block";
+  }
+}
   async function detectar() {
     if (!scanning || !detector) return;
 
