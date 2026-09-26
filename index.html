@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Escáner de códigos</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 18px 20px;
+      text-align: center;
+      background: #181818;
+      border-bottom: 1px solid #333;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .scanner {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 65vh;
+      background: #000;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .scan-frame {
+      position: absolute;
+      width: 72%;
+      height: 28%;
+      left: 14%;
+      top: 36%;
+      border: 2px solid #00e676;
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,.35);
+      pointer-events: none;
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 2px;
+      background: #00e676;
+      box-shadow: 0 0 8px #00e676;
+      animation: scan 1.8s infinite ease-in-out;
+    }
+
+    @keyframes scan {
+      0%, 100% { transform: translateY(-45px); }
+      50% { transform: translateY(45px); }
+    }
+
+    .bottom {
+      flex: 1;
+      padding: 22px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .status {
+      text-align: center;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .result {
+      background: #1d1d1d;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .result small {
+      display: block;
+      color: #999;
+      margin-bottom: 7px;
+    }
+
+    #code {
+      font-size: 25px;
+      font-weight: bold;
+      word-break: break-all;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      border: 0;
+      border-radius: 12px;
+      background: #00e676;
+      color: #000;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(.98);
+    }
+
+    .error {
+      color: #ff5252;
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📷 Escáner de productos</h1>
+</header>
+
+<div class="scanner">
+  <video id="camera" autoplay muted playsinline></video>
+  <div class="scan-frame">
+    <div class="scan-line"></div>
+  </div>
+</div>
+
+<div class="bottom">
+  <div class="status" id="status">Iniciando cámara...</div>
+
+  <div class="result">
+    <small>Código detectado</small>
+    <div id="code">—</div>
+  </div>
+
+  <button id="startButton" style="display:none;">Activar cámara</button>
+
+  <div class="error" id="error"></div>
+</div>
+
+<script>
+  const video = document.getElementById("camera");
+  const codeElement = document.getElementById("code");
+  const statusElement = document.getElementById("status");
+  const errorElement = document.getElementById("error");
+  const startButton = document.getElementById("startButton");
+
+  let detector = null;
+  let stream = null;
+  let scanning = false;
+  let lastCode = "";
+  let lastTime = 0;
+
+  async function iniciarCamara() {
+    try {
+      errorElement.textContent = "";
+      statusElement.textContent = "Solicitando cámara...";
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+
+      video.srcObject = stream;
+      await video.play();
+
+      if (!("BarcodeDetector" in window)) {
+        throw new Error(
+          "Este navegador no soporta BarcodeDetector. Probá con Chrome en Android."
+        );
+      }
+
+      detector = new BarcodeDetector({
+        formats: [
+          "ean_13",
+          "ean_8",
+          "upc_a",
+          "upc_e",
+          "code_128",
+          "code_39",
+          "itf"
+        ]
+      });
+
+      statusElement.textContent = "Apuntá la cámara al código de barras";
+      startButton.style.display = "none";
+      scanning = true;
+      detectar();
+
+    } catch (error) {
+      console.error(error);
+      scanning = false;
+      statusElement.textContent = "No se pudo iniciar la cámara";
+      errorElement.textContent =
+        error.message ||
+        "Tenés que permitir el acceso a la cámara.";
+      startButton.style.display = "block";
+    }
+  }
+
+  async function detectar() {
+    if (!scanning || !detector) return;
+
+    try {
+      if (video.readyState >= 2) {
+        const barcodes = await detector.detect(video);
+
+        if (barcodes.length > 0) {
+          const value = barcodes[0].rawValue;
+
+          if (value) {
+            const now = Date.now();
+
+            // Evita detectar repetidamente el mismo código.
+            if (value !== lastCode || now - lastTime > 1500) {
+              lastCode = value;
+              lastTime = now;
+
+              mostrarCodigo(value);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error leyendo código:", error);
+    }
+
+    requestAnimationFrame(detectar);
+  }
+
+  function mostrarCodigo(value) {
+    codeElement.textContent = value;
+    statusElement.textContent = "Código leído correctamente";
+
+    // Vibración corta
+    if (navigator.vibrate) {
+      navigator.vibrate(150);
+    }
+
+    // Beep
+    reproducirBeep();
+  }
+
+  function reproducirBeep() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+
+      const audio = new AudioContext();
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+
+      oscillator.frequency.value = 900;
+      oscillator.type = "sine";
+      gain.gain.value = 0.08;
+
+      oscillator.connect(gain);
+      gain.connect(audio.destination);
+
+      oscillator.start();
+      oscillator.stop(audio.currentTime + 0.12);
+    } catch (e) {}
+  }
+
+  startButton.addEventListener("click", iniciarCamara);
+
+  window.addEventListener("beforeunload", () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+  });
+
+  iniciarCamara();
+</script>
+
+</body>
+</html>
