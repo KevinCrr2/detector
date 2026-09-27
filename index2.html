@@ -27,8 +27,8 @@
 
 
 <button class="px-4 py-2.5 rounded-full bg-primary text-on-primary font-label-md text-label-md font-bold flex items-center gap-1.5 shadow-[0_0_15px_rgba(78,222,163,0.35)] active:scale-95 transition-transform" id="activate-camera-btn">
-
-
+<span class="material-symbols-outlined text-[18px]">photo_camera</span>
+<span>Activar cámara</span>
 </button>
 </div>
 <!-- Vignette Scrim & Glass Gradient Overlays -->
@@ -58,14 +58,14 @@
 </section>
 <!-- Live Feedback Toast Notification -->
 <div class="px-margin pt-3 pb-1 w-full">
-<div class="w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-container-high shadow-md transition-all duration-300" id="scan-toast"><div class="flex items-center gap-2.5 min-w-0"><div class="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-[16px]">barcode_scanner</span></div><div class="flex flex-col min-w-0"><p class="font-label-md text-label-md text-on-surface truncate" id="toast-title">Agua Mineral 500ml añadido</p><span class="font-label-sm text-label-sm text-primary flex items-center gap-1" id="toast-code"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Código EAN 7798765432109 detectado</span></div></div><span class="font-headline-sm text-headline-sm text-primary shrink-0 pl-2" id="toast-price">$1.200</span></div>
+<div class="w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-container-high shadow-md transition-all duration-300" id="scan-toast"><div class="flex items-center gap-2.5 min-w-0"><div class="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-[16px]">barcode_scanner</span></div><div class="flex flex-col min-w-0"><p class="font-label-md text-label-md text-on-surface truncate" id="toast-title">Esperando un código de barras</p><span class="font-label-sm text-label-sm text-primary flex items-center gap-1" id="toast-code"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Escaneá un producto para agregarlo</span></div></div><span class="font-headline-sm text-headline-sm text-primary shrink-0 pl-2" id="toast-price"></span></span></div>
 </div>
 <!-- Cart / Order Items Section -->
 <section class="flex flex-col px-margin pt-2 pb-32 gap-space-sm w-full">
 <div class="flex items-center justify-between py-1">
 <div class="flex items-center gap-2">
 <span class="font-headline-sm text-headline-sm text-on-surface">Carrito Activo</span>
-<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm" id="items-badge">3 ítems</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm" id="items-badge">0 ítems</span>
 </div>
 <button class="flex items-center gap-1 text-on-surface-variant hover:text-error active:scale-95 transition-colors" id="clear-cart-btn">
 <span class="material-symbols-outlined text-[16px]">delete_sweep</span>
@@ -74,7 +74,7 @@
 </div>
 <!-- Product Line Items -->
 <div class="flex flex-col gap-2.5" id="cart-list">
-      <div class="flex flex-col items-center justify-center p-8 bg-surface-container rounded-xl text-center gap-2">
+      <div class="cart-empty flex flex-col items-center justify-center p-8 bg-surface-container rounded-xl text-center gap-2">
         <span class="material-symbols-outlined text-outline text-[40px]">shopping_cart_checkout</span>
         <p class="font-headline-sm text-headline-sm text-on-surface">Carrito vacío</p>
         <p class="font-body-sm text-body-sm text-on-surface-variant">Apuntá la cámara a un código de barras para comenzar.</p>
@@ -100,8 +100,8 @@
 </button>
 </div>
 <div class="flex flex-col items-end shrink-0 pl-1">
-<span class="font-label-sm text-label-sm text-on-surface-variant leading-none" id="total-units-text">7 productos</span>
-<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight" id="checkout-total-val">$9.600</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant leading-none" id="total-units-text">0 productos</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight" id="checkout-total-val">$0</span>
 </div>
 </div>
 <!-- Primary Action Full Width CTA -->
@@ -111,7 +111,7 @@
 <span class="">Cobrar</span>
 </div>
 <div class="flex items-center gap-1 font-headline-md text-headline-md">
-<span class="" id="cta-total-display">$9.600</span>
+<span class="" id="cta-total-display">$0</span>
 <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
 </div>
 </button>
@@ -123,8 +123,8 @@
    * CONFIGURACIÓN SUPABASE
    * Pegá acá la URL y la anon/publishable key de tu proyecto.
    */
-  const SUPABASE_URL = 'PEGAR_AQUI_SUPABASE_URL';
-  const SUPABASE_ANON_KEY = 'PEGAR_AQUI_SUPABASE_ANON_KEY';
+  const SUPABASE_URL = 'https://rmfgtifajffxbvcgfuep.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_a_Y_DO0ZDmo_dS4_T2RugA_kWRjMFWT';
 
   const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
@@ -139,7 +139,6 @@
     const torchBtn = document.getElementById('torch-btn');
     const torchOverlay = document.getElementById('torch-overlay');
     const scanFlash = document.getElementById('scan-flash');
-    const currentBarcodeDisplay = document.getElementById('current-barcode-display');
     const cameraStatusText = document.getElementById('camera-status-text');
     const cameraStatusDot = document.getElementById('camera-status-dot');
     const toast = document.getElementById('scan-toast');
@@ -248,6 +247,15 @@
     }
 
     async function startCamera(facing = currentFacingMode) {
+      if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        cameraFallback.classList.remove('hidden');
+        video.classList.add('hidden');
+        cameraStatusText.textContent = 'Abrí la página con HTTPS o localhost';
+        cameraStatusDot.classList.replace('bg-primary', 'bg-error');
+        showToast('Cámara bloqueada', 'La cámara requiere HTTPS o localhost', null, true);
+        return;
+      }
+
       if (!navigator.mediaDevices?.getUserMedia) {
         cameraFallback.classList.remove('hidden');
         video.classList.add('hidden');
@@ -286,7 +294,7 @@
             console.error('No se pudo abrir la cámara:', err3);
             cameraFallback.classList.remove('hidden');
             video.classList.add('hidden');
-            cameraStatusText.textContent = 'No se pudo acceder a la cámara';
+            cameraStatusText.textContent = err3?.name === 'NotAllowedError' ? 'Permiso de cámara denegado' : 'No se pudo acceder a la cámara';
             cameraStatusDot.classList.replace('bg-primary', 'bg-error');
             return;
           }
@@ -374,7 +382,6 @@
     async function handleDetectedCode(code) {
       playBeep();
       flashScan();
-      currentBarcodeDisplay.textContent = code;
 
       try {
         const producto = await buscarProductoPorCodigo(code);
