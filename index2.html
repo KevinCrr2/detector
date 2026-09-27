@@ -51,7 +51,7 @@
 <!-- Scan Action / Mode Selector -->
 
 <!-- Switch Camera / Manual input Toggle -->
-<button class="w-10 h-10 rounded-full bg-surface-container-high/90 text-on-surface flex items-center justify-center shadow-md active:scale-95 transition-all" id="switch-cam-btn" title="Alternar Cámara">
+<button class="w-10 h-10 rounded-full bg-surface-container-high/90 text-on-surface flex items-center justify-center shadow-md active:scale-95 transition-all" id="switch-cam-btn" title="Seleccionar cámara trasera">
 <span class="material-symbols-outlined text-[20px]" id="switch-cam-icon">cameraswitch</span>
 </button>
 </div>
@@ -270,34 +270,73 @@
       let stream = null;
 
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: facing },
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
-        });
-      } catch (_) {
+        if (facing === 'environment') {
+          // Primero pedimos permiso y luego enumeramos las cámaras.
+          // Si el navegador expone los nombres de las lentes, preferimos
+          // una cámara trasera secundaria (ultrawide / macro / telephoto)
+          // en lugar de la cámara trasera principal.
+          try {
+            const permissionStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'environment' },
+              audio: false
+            });
+            permissionStream.getTracks().forEach(track => track.stop());
+          } catch (_) {}
+
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const cameras = devices.filter(d => d.kind === 'videoinput');
+          const rearCameras = cameras.filter(d =>
+            /back|rear|environment|trasera|ultra|wide|macro|tele|telephoto|0\.5|0,5/i.test(d.label)
+          );
+
+          // Preferimos explícitamente una lente secundaria.
+          const secondaryRear = rearCameras.find(d =>
+            /ultra.?wide|ultra.?gran|0\.5|0,5|macro|telephoto|tele/i.test(d.label)
+          );
+
+          if (secondaryRear?.deviceId) {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                deviceId: { exact: secondaryRear.deviceId },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+              },
+              audio: false
+            });
+          } else {
+            // Si el teléfono no revela los nombres de sus lentes,
+            // usamos environment. El navegador no permite garantizar
+            // una lente concreta en todos los modelos.
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: { exact: 'environment' },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+              },
+              audio: false
+            });
+          }
+        } else {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: false
+          });
+        }
+      } catch (err1) {
         try {
           stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: facing },
             audio: false
           });
-        } catch (_) {
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({
-              video: true,
-              audio: false
-            });
-          } catch (err3) {
-            console.error('No se pudo abrir la cámara:', err3);
-            cameraFallback.classList.remove('hidden');
-            video.classList.add('hidden');
-            cameraStatusText.textContent = err3?.name === 'NotAllowedError' ? 'Permiso de cámara denegado' : 'No se pudo acceder a la cámara';
-            cameraStatusDot.classList.replace('bg-primary', 'bg-error');
-            return;
-          }
+        } catch (err2) {
+          console.error('No se pudo abrir la cámara:', err2);
+          cameraFallback.classList.remove('hidden');
+          video.classList.add('hidden');
+          cameraStatusText.textContent = err2?.name === 'NotAllowedError'
+            ? 'Permiso de cámara denegado'
+            : 'No se pudo acceder a la cámara';
+          cameraStatusDot.classList.replace('bg-primary', 'bg-error');
+          return;
         }
       }
 
@@ -316,7 +355,7 @@
       cameraFallback.classList.add('hidden');
 
       cameraStatusText.textContent =
-        facing === 'environment' ? 'Cámara trasera activa' : 'Cámara frontal activa';
+        facing === 'environment' ? 'Cámara trasera secundaria activa' : 'Cámara frontal activa';
       cameraStatusDot.classList.replace('bg-error', 'bg-primary');
 
       if (videoTrack?.getCapabilities) {
@@ -550,9 +589,9 @@
     });
 
     switchCamBtn?.addEventListener('click', () => {
-      currentFacingMode =
-        currentFacingMode === 'environment' ? 'user' : 'environment';
-      startCamera(currentFacingMode);
+      // Volver a seleccionar una cámara trasera secundaria.
+      currentFacingMode = 'environment';
+      startCamera('environment');
     });
 
     activateCameraBtn?.addEventListener('click', () => startCamera());
@@ -731,41 +770,6 @@
       }
     }
 
-    // Entrada manual como respaldo si el navegador no soporta BarcodeDetector.
-    function crearEntradaManual() {
-      const section = document.getElementById('scanner-container');
-      if (!section || document.getElementById('manual-code-box')) return;
-
-      const box = document.createElement('div');
-      box.id = 'manual-code-box';
-      box.className =
-        'absolute left-3 right-3 bottom-16 z-40 flex gap-2 p-2 rounded-xl bg-surface-container-high/95 backdrop-blur-md';
-
-      box.innerHTML = `
-        <input id="manual-barcode-input" inputmode="numeric" autocomplete="off"
-          placeholder="Ingresá código de barras"
-          class="flex-1 min-w-0 rounded-full bg-surface-container-low border-outline-variant text-on-surface px-4" />
-        <button id="manual-barcode-btn" type="button"
-          class="px-4 rounded-full bg-primary text-on-primary font-bold">
-          Buscar
-        </button>
-      `;
-
-      section.appendChild(box);
-
-      document.getElementById('manual-barcode-btn').addEventListener('click', () => {
-        const code = normalizeBarcode(document.getElementById('manual-barcode-input').value);
-        if (code) handleDetectedCode(code);
-      });
-
-      document.getElementById('manual-barcode-input').addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          const code = normalizeBarcode(e.target.value);
-          if (code) handleDetectedCode(code);
-        }
-      });
-    }
-
     payBtn?.addEventListener('click', () => {
       if (!cartList.querySelector('.cart-item')) {
         showToast('Carrito vacío', 'Escaneá un producto antes de cobrar', null, true);
@@ -786,7 +790,6 @@
 
     // Inicialización.
     crearModalProducto();
-    crearEntradaManual();
     updateCart();
 
     if (navigator.mediaDevices?.getUserMedia) {
