@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html class="dark" lang="es">
+
 <head>
   <meta charset="utf-8">
 
@@ -53,6 +54,30 @@
     ::-webkit-scrollbar {
       display: none;
     }
+
+    /*
+     * Animación de la línea del escáner
+     */
+    @keyframes scanner-line {
+      0% {
+        transform: translateY(-42px);
+        opacity: 0.2;
+      }
+
+      50% {
+        transform: translateY(42px);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(-42px);
+        opacity: 0.2;
+      }
+    }
+
+    .scanner-line {
+      animation: scanner-line 2s ease-in-out infinite;
+    }
   </style>
 
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -60,8 +85,10 @@
   <script>
     tailwind.config = {
       darkMode: "class",
+
       theme: {
         extend: {
+
           colors: {
             "surface-container-low": "#131b2e",
             "secondary": "#68dba9",
@@ -113,18 +140,18 @@
           },
 
           borderRadius: {
-            DEFAULT: "0.25rem",
-            lg: "0.5rem",
-            xl: "0.75rem",
-            full: "9999px"
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
           },
 
           spacing: {
             "space-md": "0.75rem",
-            gutter: "0.75rem",
+            "gutter": "0.75rem",
             "gutter-desktop": "1.25rem",
             "margin-desktop": "2rem",
-            margin: "1rem",
+            "margin": "1rem",
             "space-xs": "0.25rem",
             "space-lg": "1.25rem",
             "space-sm": "0.5rem",
@@ -147,53 +174,67 @@
           },
 
           fontSize: {
-            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "body-md": ["14px", {
+              lineHeight: "20px",
+              fontWeight: "400"
+            }],
+
             "headline-lg-mobile": ["24px", {
               lineHeight: "32px",
               letterSpacing: "-0.01em",
               fontWeight: "600"
             }],
+
             "label-sm": ["10px", {
               lineHeight: "14px",
               letterSpacing: "0.04em",
               fontWeight: "700"
             }],
+
             "display-lg": ["40px", {
               lineHeight: "48px",
               letterSpacing: "-0.03em",
               fontWeight: "700"
             }],
+
             "headline-lg": ["30px", {
               lineHeight: "38px",
               letterSpacing: "-0.02em",
               fontWeight: "600"
             }],
+
             "label-lg": ["14px", {
               lineHeight: "18px",
               letterSpacing: "0.01em",
               fontWeight: "600"
             }],
+
             "headline-sm": ["18px", {
               lineHeight: "24px",
               fontWeight: "600"
             }],
+
             "label-md": ["12px", {
               lineHeight: "16px",
               letterSpacing: "0.02em",
               fontWeight: "600"
             }],
+
             "body-sm": ["12px", {
               lineHeight: "16px",
               fontWeight: "400"
             }],
+
             "body-lg": ["16px", {
               lineHeight: "24px",
               fontWeight: "400"
             }],
+
             "headline-md": ["20px", {
               lineHeight: "28px",
               fontWeight: "600"
             }],
+
             "display-lg-mobile": ["32px", {
               lineHeight: "40px",
               letterSpacing: "-0.02em",
@@ -206,330 +247,483 @@
   </script>
 </head>
 
+
 <body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen">
 
 <main class="flex flex-col relative w-full pb-20 bg-surface min-h-screen">
 
-  <div class="flex flex-col w-full pt-safe">
+<div class="flex flex-col w-full pt-safe">
 
-    <!-- CAMERA -->
-    <section
-      class="relative w-full h-72 overflow-hidden bg-surface-container-lowest flex items-center justify-center select-none"
-      id="scanner-container"
+
+<!-- ========================================================= -->
+<!-- CÁMARA -->
+<!-- ========================================================= -->
+
+<section
+  id="scanner-container"
+  class="relative w-full h-72 overflow-hidden bg-surface-container-lowest flex items-center justify-center select-none"
+>
+
+  <!-- Video -->
+  <video
+    id="camera-stream"
+    autoplay
+    muted
+    playsinline
+    class="absolute inset-0 w-full h-full object-cover z-0 hidden"
+  ></video>
+
+
+  <!-- Canvas -->
+  <canvas
+    id="camera-canvas"
+    class="hidden"
+  ></canvas>
+
+
+  <!-- Flash de linterna -->
+  <div
+    id="torch-overlay"
+    class="absolute inset-0 bg-white/30 pointer-events-none opacity-0 transition-opacity duration-200 z-10"
+  ></div>
+
+
+  <!-- Flash de escaneo -->
+  <div
+    id="scan-flash"
+    class="absolute inset-0 bg-primary/30 pointer-events-none transition-opacity duration-150 z-30 opacity-0"
+  ></div>
+
+
+  <!-- ===================================================== -->
+  <!-- GUÍA DEL ESCÁNER -->
+  <!-- ===================================================== -->
+
+  <div
+    id="scanner-guide"
+    class="absolute z-20 pointer-events-none"
+    style="
+      width: 82%;
+      height: 110px;
+      left: 9%;
+      top: 50%;
+      transform: translateY(-50%);
+    "
+  >
+
+    <!-- Caja -->
+    <div
+      class="absolute inset-0 rounded-2xl border-2 border-primary shadow-[0_0_25px_rgba(78,222,163,0.35)]"
+    ></div>
+
+
+    <!-- Esquinas -->
+    <div class="absolute -top-1 -left-1 w-7 h-7 border-l-4 border-t-4 border-primary rounded-tl-xl"></div>
+
+    <div class="absolute -top-1 -right-1 w-7 h-7 border-r-4 border-t-4 border-primary rounded-tr-xl"></div>
+
+    <div class="absolute -bottom-1 -left-1 w-7 h-7 border-l-4 border-b-4 border-primary rounded-bl-xl"></div>
+
+    <div class="absolute -bottom-1 -right-1 w-7 h-7 border-r-4 border-b-4 border-primary rounded-br-xl"></div>
+
+
+    <!-- Línea roja/verde de escaneo -->
+    <div
+      class="scanner-line absolute left-3 right-3 top-1/2 h-0.5 bg-primary shadow-[0_0_12px_rgba(78,222,163,1)]"
+    ></div>
+
+  </div>
+
+
+  <!-- Texto -->
+  <div
+    class="absolute bottom-14 left-0 right-0 z-20 flex justify-center pointer-events-none"
+  >
+
+    <div
+      class="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs"
+    >
+      Apuntá al código de barras
+    </div>
+
+  </div>
+
+
+  <!-- ===================================================== -->
+  <!-- FALLBACK -->
+  <!-- ===================================================== -->
+
+  <div
+    id="camera-fallback"
+    class="absolute inset-0 flex flex-col items-center justify-center bg-surface-container-low px-6 text-center z-40 transition-opacity duration-300"
+  >
+
+    <div
+      class="w-14 h-14 rounded-2xl bg-surface-container-high border border-primary/20 flex items-center justify-center text-primary mb-3 shadow-[0_0_20px_rgba(78,222,163,0.15)]"
     >
 
-      <video
-        autoplay
-        class="absolute inset-0 w-full h-full object-cover z-0 hidden"
-        id="camera-stream"
-        muted
-        playsinline
-      ></video>
-
-      <canvas
-        class="hidden"
-        id="camera-canvas"
-      ></canvas>
-
-      <div
-        class="absolute inset-0 bg-white/30 pointer-events-none opacity-0 transition-opacity duration-200 z-10"
-        id="torch-overlay"
-      ></div>
-
-      <div
-        class="absolute inset-0 bg-primary/30 pointer-events-none transition-opacity duration-150 z-20 opacity-0"
-        id="scan-flash"
-      ></div>
-
-      <!-- FALLBACK -->
-      <div
-        class="absolute inset-0 flex flex-col items-center justify-center bg-surface-container-low px-6 text-center z-10 transition-opacity duration-300"
-        id="camera-fallback"
+      <span
+        id="camera-fallback-icon"
+        class="material-symbols-outlined text-[30px]"
       >
-
-        <div class="w-14 h-14 rounded-2xl bg-surface-container-high border border-primary/20 flex items-center justify-center text-primary mb-3 shadow-[0_0_20px_rgba(78,222,163,0.15)]">
-
-          <span
-            class="material-symbols-outlined text-[30px]"
-            id="camera-fallback-icon"
-          >
-            photo_camera
-          </span>
-
-        </div>
-
-        <button
-          class="px-4 py-2.5 rounded-full bg-primary text-on-primary font-label-md text-label-md font-bold flex items-center gap-1.5 shadow-[0_0_15px_rgba(78,222,163,0.35)] active:scale-95 transition-transform"
-          id="activate-camera-btn"
-        >
-          <span class="material-symbols-outlined text-[18px]">
-            photo_camera
-          </span>
-
-          <span>Activar cámara</span>
-        </button>
-
-      </div>
-
-      <!-- OVERLAY -->
-      <div
-        class="absolute inset-0 pointer-events-none z-10 bg-gradient-to-t from-surface via-transparent to-surface-container-lowest/70"
-      ></div>
-
-      <!-- STATUS -->
-      <div class="absolute top-3 inset-x-0 flex justify-center items-center gap-2 z-20 pointer-events-none">
-
-        <div
-          class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-lowest shadow-md border border-white/5"
-          id="camera-status-pill"
-        >
-
-          <span
-            class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"
-            id="camera-status-dot"
-          ></span>
-
-          <span
-            class="font-label-sm text-label-sm text-on-surface"
-            id="camera-status-text"
-          >
-            Cámara no disponible
-          </span>
-
-        </div>
-
-      </div>
-
-      <!-- CAMERA CONTROLS -->
-      <div class="absolute bottom-3 inset-x-3 z-30 flex items-center justify-between">
-
-        <!-- TORCH -->
-        <button
-          class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center shadow-md active:scale-95 transition-all"
-          id="torch-btn"
-          title="Linterna"
-        >
-          <span
-            class="material-symbols-outlined text-[20px]"
-            id="torch-icon"
-          >
-            flash_on
-          </span>
-        </button>
-
-        <!-- CAMERA FIXED TO REAR -->
-        <div
-          class="w-10 h-10 rounded-full bg-surface-container-high text-primary flex items-center justify-center shadow-md"
-          title="Cámara trasera principal"
-        >
-          <span class="material-symbols-outlined text-[20px]">
-            photo_camera
-          </span>
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- TOAST -->
-    <div class="px-margin pt-3 pb-1 w-full">
-
-      <div
-        class="w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-container-high shadow-md transition-all duration-300"
-        id="scan-toast"
-      >
-
-        <div class="flex items-center gap-2.5 min-w-0">
-
-          <div class="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[16px]">
-              barcode_scanner
-            </span>
-          </div>
-
-          <div class="flex flex-col min-w-0">
-
-            <p
-              class="font-label-md text-label-md text-on-surface truncate"
-              id="toast-title"
-            >
-              Esperando un código de barras
-            </p>
-
-            <span
-              class="font-label-sm text-label-sm text-primary flex items-center gap-1"
-              id="toast-code"
-            >
-              <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-              Escaneá un producto para agregarlo
-            </span>
-
-          </div>
-
-        </div>
-
-        <span
-          class="font-headline-sm text-headline-sm text-primary shrink-0 pl-2"
-          id="toast-price"
-        ></span>
-
-      </div>
+        photo_camera
+      </span>
 
     </div>
 
-    <!-- CART -->
-    <section class="flex flex-col px-margin pt-2 pb-32 gap-space-sm w-full">
 
-      <div class="flex items-center justify-between py-1">
-
-        <div class="flex items-center gap-2">
-
-          <span class="font-headline-sm text-headline-sm text-on-surface">
-            Carrito Activo
-          </span>
-
-          <span
-            class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm"
-            id="items-badge"
-          >
-            0 ítems
-          </span>
-
-        </div>
-
-        <button
-          class="flex items-center gap-1 text-on-surface-variant hover:text-error active:scale-95 transition-colors"
-          id="clear-cart-btn"
-        >
-          <span class="material-symbols-outlined text-[16px]">
-            delete_sweep
-          </span>
-
-          <span class="font-label-sm text-label-sm">
-            Vaciar
-          </span>
-        </button>
-
-      </div>
-
-      <div
-        class="flex flex-col gap-2.5"
-        id="cart-list"
-      >
-
-        <div
-          class="cart-empty flex flex-col items-center justify-center p-8 bg-surface-container rounded-xl text-center gap-2"
-        >
-
-          <span class="material-symbols-outlined text-outline text-[40px]">
-            shopping_cart_checkout
-          </span>
-
-          <p class="font-headline-sm text-headline-sm text-on-surface">
-            Carrito vacío
-          </p>
-
-          <p class="font-body-sm text-body-sm text-on-surface-variant">
-            Apuntá la cámara a un código de barras para comenzar.
-          </p>
-
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- CHECKOUT -->
-    <div
-      class="fixed bottom-16 inset-x-0 z-40 bg-surface-container-low px-margin pt-3 pb-3 shadow-[0_-8px_24px_rgba(0,0,0,0.5)] flex flex-col gap-2.5"
+    <button
+      id="activate-camera-btn"
+      class="px-4 py-2.5 rounded-full bg-primary text-on-primary font-label-md text-label-md font-bold flex items-center gap-1.5 shadow-[0_0_15px_rgba(78,222,163,0.35)] active:scale-95 transition-transform"
     >
 
-      <div class="flex items-center justify-between gap-2">
+      <span class="material-symbols-outlined text-[18px]">
+        photo_camera
+      </span>
 
-        <div class="flex items-center gap-1.5 overflow-x-auto py-0.5">
+      <span>
+        Activar cámara
+      </span>
 
-          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm active:bg-primary active:text-on-primary transition-colors">
-            <span class="material-symbols-outlined text-[16px]">
-              payments
-            </span>
-            <span>Efectivo</span>
-          </button>
+    </button>
 
-          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm active:bg-primary active:text-on-primary transition-colors">
-            <span class="material-symbols-outlined text-[16px]">
-              qr_code_2
-            </span>
-            <span>QR Mercado Pago</span>
-          </button>
+  </div>
 
-          <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm active:bg-primary active:text-on-primary transition-colors">
-            <span class="material-symbols-outlined text-[16px]">
-              credit_card
-            </span>
-            <span>Tarjeta</span>
-          </button>
 
-        </div>
+  <!-- Gradiente -->
+  <div
+    class="absolute inset-0 pointer-events-none z-10 bg-gradient-to-t from-surface/80 via-transparent to-surface-container-lowest/70"
+  ></div>
 
-        <div class="flex flex-col items-end shrink-0 pl-1">
 
-          <span
-            class="font-label-sm text-label-sm text-on-surface-variant leading-none"
-            id="total-units-text"
-          >
-            0 productos
-          </span>
+  <!-- Estado -->
+  <div
+    class="absolute top-3 inset-x-0 flex justify-center items-center gap-2 z-40 pointer-events-none"
+  >
 
-          <span
-            class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight"
-            id="checkout-total-val"
-          >
-            $0
-          </span>
+    <div
+      id="camera-status-pill"
+      class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-lowest/90 shadow-md border border-white/5 backdrop-blur-sm"
+    >
 
-        </div>
+      <span
+        id="camera-status-dot"
+        class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"
+      ></span>
 
-      </div>
-
-      <button
-        class="w-full h-14 rounded-full bg-primary text-on-primary flex items-center justify-between px-5 font-headline-sm text-headline-sm shadow-[0_0_20px_rgba(78,222,163,0.35)] active:scale-[0.98] transition-transform"
-        id="pay-action-btn"
+      <span
+        id="camera-status-text"
+        class="font-label-sm text-label-sm text-on-surface"
       >
-
-        <div class="flex items-center gap-2">
-
-          <span class="material-symbols-outlined text-[24px]">
-            point_of_sale
-          </span>
-
-          <span>Cobrar</span>
-
-        </div>
-
-        <div class="flex items-center gap-1 font-headline-md text-headline-md">
-
-          <span id="cta-total-display">
-            $0
-          </span>
-
-          <span class="material-symbols-outlined text-[20px]">
-            arrow_forward
-          </span>
-
-        </div>
-
-      </button>
+        Iniciando cámara...
+      </span>
 
     </div>
 
   </div>
 
+
+  <!-- Controles -->
+  <div
+    class="absolute bottom-3 inset-x-3 z-40 flex items-center justify-between"
+  >
+
+    <!-- Linterna -->
+    <button
+      id="torch-btn"
+      title="Linterna"
+      class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center shadow-md active:scale-95 transition-all"
+    >
+
+      <span
+        id="torch-icon"
+        class="material-symbols-outlined text-[20px]"
+      >
+        flash_on
+      </span>
+
+    </button>
+
+
+    <!-- Cámara trasera -->
+    <button
+      id="switch-cam-btn"
+      title="Cámara trasera"
+      class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center shadow-md active:scale-95 transition-all"
+    >
+
+      <span
+        class="material-symbols-outlined text-[20px]"
+      >
+        cameraswitch
+      </span>
+
+    </button>
+
+  </div>
+
+</section>
+
+
+<!-- ========================================================= -->
+<!-- TOAST -->
+<!-- ========================================================= -->
+
+<div class="px-margin pt-3 pb-1 w-full">
+
+  <div
+    id="scan-toast"
+    class="w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-container-high shadow-md transition-all duration-300"
+  >
+
+    <div class="flex items-center gap-2.5 min-w-0">
+
+      <div
+        class="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0"
+      >
+
+        <span class="material-symbols-outlined text-[16px]">
+          barcode_scanner
+        </span>
+
+      </div>
+
+
+      <div class="flex flex-col min-w-0">
+
+        <p
+          id="toast-title"
+          class="font-label-md text-label-md text-on-surface truncate"
+        >
+          Esperando un código de barras
+        </p>
+
+        <span
+          id="toast-code"
+          class="font-label-sm text-label-sm text-primary flex items-center gap-1"
+        >
+
+          <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+
+          Escaneá un producto para agregarlo
+
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <span
+      id="toast-price"
+      class="font-headline-sm text-headline-sm text-primary shrink-0 pl-2"
+    ></span>
+
+  </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- CARRITO -->
+<!-- ========================================================= -->
+
+<section
+  class="flex flex-col px-margin pt-2 pb-32 gap-space-sm w-full"
+>
+
+  <div class="flex items-center justify-between py-1">
+
+    <div class="flex items-center gap-2">
+
+      <span class="font-headline-sm text-headline-sm text-on-surface">
+        Carrito Activo
+      </span>
+
+      <span
+        id="items-badge"
+        class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm"
+      >
+        0 ítems
+      </span>
+
+    </div>
+
+
+    <button
+      id="clear-cart-btn"
+      class="flex items-center gap-1 text-on-surface-variant hover:text-error active:scale-95 transition-colors"
+    >
+
+      <span class="material-symbols-outlined text-[16px]">
+        delete_sweep
+      </span>
+
+      <span class="font-label-sm text-label-sm">
+        Vaciar
+      </span>
+
+    </button>
+
+  </div>
+
+
+  <div
+    id="cart-list"
+    class="flex flex-col gap-2.5"
+  >
+
+    <div
+      class="cart-empty flex flex-col items-center justify-center p-8 bg-surface-container rounded-xl text-center gap-2"
+    >
+
+      <span
+        class="material-symbols-outlined text-outline text-[40px]"
+      >
+        shopping_cart_checkout
+      </span>
+
+      <p class="font-headline-sm text-headline-sm text-on-surface">
+        Carrito vacío
+      </p>
+
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        Apuntá la cámara a un código de barras para comenzar.
+      </p>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ========================================================= -->
+<!-- CHECKOUT -->
+<!-- ========================================================= -->
+
+<div
+  class="fixed bottom-16 inset-x-0 z-40 bg-surface-container-low px-margin pt-3 pb-3 shadow-[0_-8px_24px_rgba(0,0,0,0.5)] flex flex-col gap-2.5"
+>
+
+  <div class="flex items-center justify-between gap-2">
+
+    <div class="flex items-center gap-1.5 overflow-x-auto py-0.5">
+
+      <button
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm active:bg-primary active:text-on-primary transition-colors"
+      >
+
+        <span class="material-symbols-outlined text-[16px]">
+          payments
+        </span>
+
+        <span>
+          Efectivo
+        </span>
+
+      </button>
+
+
+      <button
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm active:bg-primary active:text-on-primary transition-colors"
+      >
+
+        <span class="material-symbols-outlined text-[16px]">
+          qr_code_2
+        </span>
+
+        <span>
+          QR Mercado Pago
+        </span>
+
+      </button>
+
+
+      <button
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm active:bg-primary active:text-on-primary transition-colors"
+      >
+
+        <span class="material-symbols-outlined text-[16px]">
+          credit_card
+        </span>
+
+        <span>
+          Tarjeta
+        </span>
+
+      </button>
+
+    </div>
+
+
+    <div class="flex flex-col items-end shrink-0 pl-1">
+
+      <span
+        id="total-units-text"
+        class="font-label-sm text-label-sm text-on-surface-variant leading-none"
+      >
+        0 productos
+      </span>
+
+      <span
+        id="checkout-total-val"
+        class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight"
+      >
+        $0
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <button
+    id="pay-action-btn"
+    class="w-full h-14 rounded-full bg-primary text-on-primary flex items-center justify-between px-5 font-headline-sm text-headline-sm shadow-[0_0_20px_rgba(78,222,163,0.35)] active:scale-[0.98] transition-transform"
+  >
+
+    <div class="flex items-center gap-2">
+
+      <span class="material-symbols-outlined text-[24px]">
+        point_of_sale
+      </span>
+
+      <span>
+        Cobrar
+      </span>
+
+    </div>
+
+
+    <div class="flex items-center gap-1 font-headline-md text-headline-md">
+
+      <span id="cta-total-display">
+        $0
+      </span>
+
+      <span class="material-symbols-outlined text-[20px]">
+        arrow_forward
+      </span>
+
+    </div>
+
+  </button>
+
+</div>
+
+</div>
 </main>
 
-<!-- NAV -->
+
+<!-- ========================================================= -->
+<!-- NAVEGACIÓN -->
+<!-- ========================================================= -->
+
 <nav
   class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container-lowest shadow-[0_-4px_20px_rgba(0,0,0,0.4)]"
 >
+
   <div class="flex justify-around items-center h-16 px-space-xs">
 
     <a
@@ -537,6 +731,7 @@
       class="flex flex-col items-center justify-center gap-1 min-w-[64px] h-12 rounded-xl transition-colors text-primary bg-surface-container-high"
       href="#"
     >
+
       <span class="material-symbols-outlined text-[22px]">
         qr_code_scanner
       </span>
@@ -544,12 +739,15 @@
       <span class="font-label-sm text-label-sm">
         Terminal
       </span>
+
     </a>
+
 
     <a
       class="flex flex-col items-center justify-center gap-1 min-w-[64px] h-12 rounded-xl text-on-surface-variant transition-colors hover:text-on-surface"
       href="#"
     >
+
       <span class="material-symbols-outlined text-[22px]">
         inventory_2
       </span>
@@ -557,12 +755,15 @@
       <span class="font-label-sm text-label-sm">
         Catalog
       </span>
+
     </a>
+
 
     <a
       class="flex flex-col items-center justify-center gap-1 min-w-[64px] h-12 rounded-xl text-on-surface-variant transition-colors hover:text-on-surface"
       href="#"
     >
+
       <span class="material-symbols-outlined text-[22px]">
         receipt_long
       </span>
@@ -570,12 +771,15 @@
       <span class="font-label-sm text-label-sm">
         Orders
       </span>
+
     </a>
+
 
     <a
       class="flex flex-col items-center justify-center gap-1 min-w-[64px] h-12 rounded-xl text-on-surface-variant transition-colors hover:text-on-surface"
       href="#"
     >
+
       <span class="material-symbols-outlined text-[22px]">
         tune
       </span>
@@ -583,18 +787,27 @@
       <span class="font-label-sm text-label-sm">
         Settings
       </span>
+
     </a>
 
   </div>
+
 </nav>
+
+
+<!-- ========================================================= -->
+<!-- SUPABASE -->
+<!-- ========================================================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+
 <script>
+
   /*
-   * ============================================================
+   * ==========================================================
    * SUPABASE
-   * ============================================================
+   * ==========================================================
    */
 
   const SUPABASE_URL =
@@ -611,87 +824,132 @@
 
 
   /*
-   * ============================================================
-   * APP
-   * ============================================================
+   * ==========================================================
+   * INICIO
+   * ==========================================================
    */
 
   (function () {
 
     const video =
-      document.getElementById('camera-stream');
+      document.getElementById(
+        'camera-stream'
+      );
 
     const cameraFallback =
-      document.getElementById('camera-fallback');
+      document.getElementById(
+        'camera-fallback'
+      );
 
     const activateCameraBtn =
-      document.getElementById('activate-camera-btn');
+      document.getElementById(
+        'activate-camera-btn'
+      );
+
+    const switchCamBtn =
+      document.getElementById(
+        'switch-cam-btn'
+      );
 
     const torchBtn =
-      document.getElementById('torch-btn');
+      document.getElementById(
+        'torch-btn'
+      );
 
     const torchOverlay =
-      document.getElementById('torch-overlay');
+      document.getElementById(
+        'torch-overlay'
+      );
 
     const scanFlash =
-      document.getElementById('scan-flash');
+      document.getElementById(
+        'scan-flash'
+      );
 
     const cameraStatusText =
-      document.getElementById('camera-status-text');
+      document.getElementById(
+        'camera-status-text'
+      );
 
     const cameraStatusDot =
-      document.getElementById('camera-status-dot');
+      document.getElementById(
+        'camera-status-dot'
+      );
 
     const toast =
-      document.getElementById('scan-toast');
+      document.getElementById(
+        'scan-toast'
+      );
 
     const toastTitle =
-      document.getElementById('toast-title');
+      document.getElementById(
+        'toast-title'
+      );
 
     const toastCode =
-      document.getElementById('toast-code');
+      document.getElementById(
+        'toast-code'
+      );
 
     const toastPrice =
-      document.getElementById('toast-price');
+      document.getElementById(
+        'toast-price'
+      );
 
     const cartList =
-      document.getElementById('cart-list');
+      document.getElementById(
+        'cart-list'
+      );
 
     const checkoutTotal =
-      document.getElementById('checkout-total-val');
+      document.getElementById(
+        'checkout-total-val'
+      );
 
     const ctaTotal =
-      document.getElementById('cta-total-display');
+      document.getElementById(
+        'cta-total-display'
+      );
 
     const totalUnits =
-      document.getElementById('total-units-text');
+      document.getElementById(
+        'total-units-text'
+      );
 
     const itemsBadge =
-      document.getElementById('items-badge');
+      document.getElementById(
+        'items-badge'
+      );
 
     const clearCartBtn =
-      document.getElementById('clear-cart-btn');
+      document.getElementById(
+        'clear-cart-btn'
+      );
 
     const payBtn =
-      document.getElementById('pay-action-btn');
+      document.getElementById(
+        'pay-action-btn'
+      );
 
 
     /*
-     * ==========================================================
-     * VARIABLES DE CÁMARA
-     * ==========================================================
+     * Variables
      */
 
     let currentStream = null;
+
     let videoTrack = null;
+
     let torchActive = false;
 
     let audioCtx = null;
 
     let isDetecting = false;
+
     let barcodeDetector = null;
 
     let lastScanTime = 0;
+
     let lastDetectedCode = '';
 
     let rafId = null;
@@ -699,7 +957,7 @@
 
     /*
      * ==========================================================
-     * SUPABASE CONFIG
+     * SUPABASE CONFIGURADO
      * ==========================================================
      */
 
@@ -708,8 +966,12 @@
       return (
         SUPABASE_URL &&
         SUPABASE_ANON_KEY &&
-        !SUPABASE_URL.includes('PEGAR_AQUI') &&
-        !SUPABASE_ANON_KEY.includes('PEGAR_AQUI')
+        !SUPABASE_URL.includes(
+          'PEGAR_AQUI'
+        ) &&
+        !SUPABASE_ANON_KEY.includes(
+          'PEGAR_AQUI'
+        )
       );
 
     }
@@ -728,7 +990,10 @@
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+        .replaceAll(
+          "'",
+          '&#039;'
+        );
 
     }
 
@@ -742,20 +1007,21 @@
     function money(value) {
 
       return '$' +
-        Number(value || 0).toLocaleString(
-          'es-AR',
-          {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2
-          }
-        );
+        Number(value || 0)
+          .toLocaleString(
+            'es-AR',
+            {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2
+            }
+          );
 
     }
 
 
     /*
      * ==========================================================
-     * BEEP
+     * SONIDO
      * ==========================================================
      */
 
@@ -770,10 +1036,14 @@
         if (!AudioContext) return;
 
         if (!audioCtx) {
-          audioCtx = new AudioContext();
+          audioCtx =
+            new AudioContext();
         }
 
-        if (audioCtx.state === 'suspended') {
+        if (
+          audioCtx.state ===
+          'suspended'
+        ) {
           audioCtx.resume();
         }
 
@@ -801,7 +1071,10 @@
         );
 
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+
+        gain.connect(
+          audioCtx.destination
+        );
 
         osc.start();
 
@@ -827,20 +1100,27 @@
       error = false
     ) {
 
-      toastTitle.textContent = title;
+      toastTitle.textContent =
+        title;
 
       toastCode.innerHTML =
         `<span class="w-1.5 h-1.5 rounded-full ${
-          error ? 'bg-error' : 'bg-primary'
+          error
+            ? 'bg-error'
+            : 'bg-primary'
         }"></span>` +
         `${escapeHtml(code || '')}`;
 
       toastPrice.textContent =
-        price == null ? '' : money(price);
+        price == null
+          ? ''
+          : money(price);
 
       toast.classList.add(
         'ring-2',
-        error ? 'ring-error' : 'ring-primary',
+        error
+          ? 'ring-error'
+          : 'ring-primary',
         'scale-[1.02]'
       );
 
@@ -910,27 +1190,33 @@
      * ==========================================================
      */
 
-    if ('BarcodeDetector' in window) {
+    if (
+      'BarcodeDetector' in window
+    ) {
 
       try {
 
         barcodeDetector =
           new window.BarcodeDetector({
+
             formats: [
               'ean_13',
               'ean_8',
               'upc_a',
               'upc_e',
               'code_128',
-              'code_39'
+              'code_39',
+              'itf',
+              'codabar'
             ]
+
           });
 
-      } catch (e) {
+      } catch (error) {
 
         console.warn(
           'BarcodeDetector no pudo inicializarse:',
-          e
+          error
         );
 
       }
@@ -940,18 +1226,7 @@
 
     /*
      * ==========================================================
-     * CÁMARA TRASERA PRINCIPAL
-     * ==========================================================
-     *
-     * IMPORTANTE:
-     *
-     * No buscamos "ultra-wide", "macro", "tele", etc.
-     *
-     * Usamos:
-     *
-     * facingMode: { exact: 'environment' }
-     *
-     * Esto solicita la cámara orientada hacia atrás.
+     * CÁMARA TRASERA + AUTOFOCUS
      * ==========================================================
      */
 
@@ -999,7 +1274,9 @@
        * API disponible
        */
 
-      if (!navigator.mediaDevices?.getUserMedia) {
+      if (
+        !navigator.mediaDevices?.getUserMedia
+      ) {
 
         cameraFallback.classList.remove(
           'hidden'
@@ -1018,16 +1295,19 @@
 
 
       /*
-       * Detener cámara anterior
+       * Detener stream anterior
        */
 
       if (currentStream) {
 
         currentStream
           .getTracks()
-          .forEach(track => track.stop());
+          .forEach(track => {
+            track.stop();
+          });
 
         currentStream = null;
+
         videoTrack = null;
 
       }
@@ -1037,65 +1317,27 @@
 
 
       /*
-       * ========================================================
-       * PRIMER INTENTO
-       * ========================================================
-       *
-       * exact: environment
-       *
-       * Pedimos específicamente una cámara trasera.
+       * ======================================================
+       * PEDIR CÁMARA TRASERA
+       * ======================================================
        */
 
       try {
 
         stream =
-          await navigator.mediaDevices.getUserMedia({
-
-            video: {
-
-              facingMode: {
-                exact: 'environment'
-              },
-
-              width: {
-                ideal: 1920
-              },
-
-              height: {
-                ideal: 1080
-              }
-
-            },
-
-            audio: false
-
-          });
-
-      } catch (error) {
-
-        console.warn(
-          'No se pudo abrir environment con exact:',
-          error
-        );
-
-
-        /*
-         * ======================================================
-         * SEGUNDO INTENTO
-         * ======================================================
-         *
-         * Algunos dispositivos/navegadores no aceptan
-         * "exact", por lo que hacemos un fallback.
-         */
-
-        try {
-
-          stream =
-            await navigator.mediaDevices.getUserMedia({
+          await navigator.mediaDevices
+            .getUserMedia({
 
               video: {
 
-                facingMode: 'environment',
+                /*
+                 * environment =
+                 * cámara trasera
+                 */
+
+                facingMode: {
+                  exact: 'environment'
+                },
 
                 width: {
                   ideal: 1280
@@ -1103,6 +1345,11 @@
 
                 height: {
                   ideal: 720
+                },
+
+                frameRate: {
+                  ideal: 30,
+                  max: 30
                 }
 
               },
@@ -1111,10 +1358,52 @@
 
             });
 
+      } catch (error) {
+
+        console.warn(
+          'Cámara trasera exacta no disponible:',
+          error
+        );
+
+
+        /*
+         * Fallback
+         */
+
+        try {
+
+          stream =
+            await navigator.mediaDevices
+              .getUserMedia({
+
+                video: {
+
+                  facingMode:
+                    'environment',
+
+                  width: {
+                    ideal: 1280
+                  },
+
+                  height: {
+                    ideal: 720
+                  },
+
+                  frameRate: {
+                    ideal: 30,
+                    max: 30
+                  }
+
+                },
+
+                audio: false
+
+              });
+
         } catch (error2) {
 
           console.error(
-            'No se pudo acceder a la cámara:',
+            'No se pudo abrir cámara:',
             error2
           );
 
@@ -1126,30 +1415,31 @@
             'hidden'
           );
 
+          let mensaje =
+            'No se pudo acceder a la cámara';
 
           if (
             error2?.name ===
             'NotAllowedError'
           ) {
 
-            cameraStatusText.textContent =
+            mensaje =
               'Permiso de cámara denegado';
 
-          } else if (
+          }
+
+          if (
             error2?.name ===
             'NotFoundError'
           ) {
 
-            cameraStatusText.textContent =
+            mensaje =
               'No se encontró una cámara';
-
-          } else {
-
-            cameraStatusText.textContent =
-              'No se pudo acceder a la cámara';
 
           }
 
+          cameraStatusText.textContent =
+            mensaje;
 
           cameraStatusDot.classList.replace(
             'bg-primary',
@@ -1157,9 +1447,8 @@
           );
 
           showToast(
-            'No se pudo abrir la cámara',
-            error2?.message ||
-              'Verificá los permisos de cámara',
+            'Error de cámara',
+            mensaje,
             null,
             true
           );
@@ -1172,17 +1461,19 @@
 
 
       /*
-       * ========================================================
+       * ======================================================
        * ASIGNAR STREAM
-       * ========================================================
+       * ======================================================
        */
 
-      currentStream = stream;
+      currentStream =
+        stream;
 
       videoTrack =
         stream.getVideoTracks()[0];
 
-      video.srcObject = stream;
+      video.srcObject =
+        currentStream;
 
       video.muted = true;
 
@@ -1197,6 +1488,105 @@
       );
 
 
+      /*
+       * ======================================================
+       * AUTOFOCUS
+       * ======================================================
+       */
+
+      try {
+
+        if (
+          videoTrack?.getCapabilities
+        ) {
+
+          const capabilities =
+            videoTrack.getCapabilities();
+
+          console.log(
+            'Capacidades:',
+            capabilities
+          );
+
+
+          /*
+           * Autofocus continuo
+           */
+
+          if (
+            capabilities.focusMode &&
+            capabilities.focusMode.includes(
+              'continuous'
+            )
+          ) {
+
+            await videoTrack
+              .applyConstraints({
+
+                advanced: [
+                  {
+                    focusMode:
+                      'continuous'
+                  }
+                ]
+
+              });
+
+            console.log(
+              'Autofocus continuo activado'
+            );
+
+          }
+
+
+          /*
+           * Si no hay continuous,
+           * intentar single-shot.
+           */
+
+          else if (
+            capabilities.focusMode &&
+            capabilities.focusMode.includes(
+              'single-shot'
+            )
+          ) {
+
+            await videoTrack
+              .applyConstraints({
+
+                advanced: [
+                  {
+                    focusMode:
+                      'single-shot'
+                  }
+                ]
+
+              });
+
+            console.log(
+              'Autofocus single-shot activado'
+            );
+
+          }
+
+        }
+
+      } catch (focusError) {
+
+        console.warn(
+          'No se pudo configurar autofocus:',
+          focusError
+        );
+
+      }
+
+
+      /*
+       * ======================================================
+       * VIDEO
+       * ======================================================
+       */
+
       try {
 
         await video.play();
@@ -1204,7 +1594,7 @@
       } catch (error) {
 
         console.warn(
-          'video.play():',
+          'No se pudo reproducir video:',
           error
         );
 
@@ -1229,7 +1619,7 @@
        */
 
       cameraStatusText.textContent =
-        'Cámara trasera principal activa';
+        'Cámara trasera · Enfoque automático';
 
       cameraStatusDot.classList.replace(
         'bg-error',
@@ -1238,9 +1628,9 @@
 
 
       /*
-       * ========================================================
+       * ======================================================
        * LINTERNA
-       * ========================================================
+       * ======================================================
        */
 
       if (
@@ -1265,13 +1655,23 @@
 
 
       /*
-       * ========================================================
+       * ======================================================
        * INICIAR ESCANEO
-       * ========================================================
+       * ======================================================
        */
 
       if (
-        barcodeDetector &&
+        !barcodeDetector
+      ) {
+
+        cameraStatusText.textContent =
+          'Cámara activa · lector no compatible';
+
+        return;
+
+      }
+
+      if (
         !isDetecting
       ) {
 
@@ -1286,17 +1686,20 @@
 
     /*
      * ==========================================================
-     * ESCANEO CONTINUO
+     * SCAN LOOP
      * ==========================================================
      */
 
     async function scanLoop() {
 
-      if (!isDetecting) return;
+      if (!isDetecting) {
+        return;
+      }
 
 
       /*
-       * Si la pestaña está oculta
+       * Ahorrar batería si la pestaña
+       * está en segundo plano
        */
 
       if (document.hidden) {
@@ -1318,23 +1721,25 @@
         barcodeDetector
       ) {
 
-        const now = Date.now();
+        const now =
+          Date.now();
 
 
         /*
-         * Evitar detectar demasiado rápido
+         * No intentar detectar
+         * demasiadas veces por segundo
          */
 
         if (
-          now - lastScanTime > 700
+          now - lastScanTime >
+          500
         ) {
 
           try {
 
             const barcodes =
-              await barcodeDetector.detect(
-                video
-              );
+              await barcodeDetector
+                .detect(video);
 
 
             if (
@@ -1351,7 +1756,8 @@
                 code &&
                 (
                   code !== lastDetectedCode ||
-                  now - lastScanTime > 2500
+                  now - lastScanTime >
+                    2500
                 )
               ) {
 
@@ -1369,7 +1775,14 @@
 
             }
 
-          } catch (_) {}
+          } catch (error) {
+
+            console.warn(
+              'Error detectando código:',
+              error
+            );
+
+          }
 
         }
 
@@ -1394,10 +1807,13 @@
       'visibilitychange',
       () => {
 
-        if (!isDetecting) return;
+        if (!isDetecting) {
+          return;
+        }
 
-
-        if (document.hidden) {
+        if (
+          document.hidden
+        ) {
 
           if (rafId) {
 
@@ -1429,10 +1845,12 @@
       codigo
     ) {
 
-      if (!supabaseConfigurado()) {
+      if (
+        !supabaseConfigurado()
+      ) {
 
         throw new Error(
-          'Falta configurar SUPABASE_URL y SUPABASE_ANON_KEY.'
+          'Falta configurar Supabase.'
         );
 
       }
@@ -1502,7 +1920,7 @@
 
           showToast(
             'Producto no encontrado',
-            `Código ${code} no existe en la base de datos`,
+            `Código ${code} no existe en la base`,
             null,
             true
           );
@@ -1515,7 +1933,9 @@
 
       } catch (error) {
 
-        console.error(error);
+        console.error(
+          error
+        );
 
         showToast(
           'Error consultando Supabase',
@@ -1541,17 +1961,15 @@
     ) {
 
       let item =
-        Array
-          .from(
-            cartList.querySelectorAll(
-              '.cart-item'
-            )
+        Array.from(
+          cartList.querySelectorAll(
+            '.cart-item'
           )
-          .find(
-            el =>
-              el.dataset.productId ===
-              String(producto.id)
-          );
+        ).find(
+          el =>
+            el.dataset.productId ===
+            String(producto.id)
+        );
 
 
       /*
@@ -1591,7 +2009,8 @@
           );
 
         if (empty) {
-          cartList.innerHTML = '';
+          cartList.innerHTML =
+            '';
         }
 
 
@@ -1624,8 +2043,12 @@
             ? `
               <img
                 class="w-full h-full object-cover"
-                src="${escapeHtml(producto.imagen)}"
-                alt="${escapeHtml(producto.nombre)}"
+                src="${escapeHtml(
+                  producto.imagen
+                )}"
+                alt="${escapeHtml(
+                  producto.nombre
+                )}"
                 loading="lazy"
               >
             `
@@ -1650,13 +2073,17 @@
             <div class="flex flex-col min-w-0">
 
               <h4 class="font-label-lg text-label-lg text-on-surface truncate">
-                ${escapeHtml(producto.nombre)}
+                ${escapeHtml(
+                  producto.nombre
+                )}
               </h4>
 
               <div class="flex items-center gap-2">
 
                 <span class="font-label-sm text-label-sm text-on-surface-variant">
-                  ${money(producto.precio)} c/u
+                  ${money(
+                    producto.precio
+                  )} c/u
                 </span>
 
                 ${
@@ -1665,7 +2092,9 @@
                       <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
 
                       <span class="font-label-sm text-label-sm text-secondary">
-                        ${escapeHtml(producto.marca)}
+                        ${escapeHtml(
+                          producto.marca
+                        )}
                       </span>
                     `
                     : ''
@@ -1685,30 +2114,40 @@
               <button
                 class="qty-btn-minus w-7 h-7 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface active:bg-surface-bright"
               >
+
                 <span class="material-symbols-outlined text-[14px]">
                   remove
                 </span>
+
               </button>
+
 
               <span class="qty-counter font-headline-sm text-headline-sm text-on-surface px-1">
                 1
               </span>
 
+
               <button
                 class="qty-btn-plus w-7 h-7 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface active:bg-surface-bright"
               >
+
                 <span class="material-symbols-outlined text-[14px]">
                   add
                 </span>
+
               </button>
 
             </div>
 
+
             <span class="item-subtotal font-headline-sm text-headline-sm text-on-surface w-20 text-right">
-              ${money(producto.precio)}
+              ${money(
+                producto.precio
+              )}
             </span>
 
           </div>
+
         `;
 
 
@@ -1738,6 +2177,7 @@
         );
 
       let grandTotal = 0;
+
       let totalCount = 0;
 
 
@@ -1759,7 +2199,6 @@
           const subtotal =
             price * qty;
 
-
           grandTotal +=
             subtotal;
 
@@ -1775,7 +2214,9 @@
           if (subtotalEl) {
 
             subtotalEl.textContent =
-              money(subtotal);
+              money(
+                subtotal
+              );
 
           }
 
@@ -1784,7 +2225,9 @@
 
 
       const formatted =
-        money(grandTotal);
+        money(
+          grandTotal
+        );
 
 
       checkoutTotal.textContent =
@@ -1839,7 +2282,7 @@
 
     /*
      * ==========================================================
-     * CANTIDADES
+     * CANTIDAD + / -
      * ==========================================================
      */
 
@@ -1909,7 +2352,6 @@
               1
             ) + 1;
 
-
           item.dataset.qty =
             qty;
 
@@ -1917,7 +2359,6 @@
             '.qty-counter'
           ).textContent =
             qty;
-
 
           updateCart();
 
@@ -1965,6 +2406,27 @@
 
     /*
      * ==========================================================
+     * BOTÓN CÁMARA TRASERA
+     * ==========================================================
+     */
+
+    switchCamBtn?.addEventListener(
+      'click',
+      () => {
+
+        /*
+         * Siempre volver a la cámara
+         * trasera.
+         */
+
+        startCamera();
+
+      }
+    );
+
+
+    /*
+     * ==========================================================
      * ACTIVAR CÁMARA
      * ==========================================================
      */
@@ -1972,7 +2434,9 @@
     activateCameraBtn?.addEventListener(
       'click',
       () => {
+
         startCamera();
+
       }
     );
 
@@ -1998,8 +2462,19 @@
           videoTrack.getCapabilities();
 
 
-        if (!capabilities.torch) {
+        if (
+          !capabilities.torch
+        ) {
+
+          showToast(
+            'Linterna no disponible',
+            'Tu dispositivo no permite controlarla desde el navegador',
+            null,
+            true
+          );
+
           return;
+
         }
 
 
@@ -2009,23 +2484,27 @@
 
         try {
 
-          await videoTrack.applyConstraints({
+          await videoTrack
+            .applyConstraints({
 
-            advanced: [
-              {
-                torch:
-                  torchActive
-              }
-            ]
+              advanced: [
+                {
+                  torch:
+                    torchActive
+                }
+              ]
 
-          });
+            });
 
-        } catch (e) {
+        } catch (error) {
 
           console.warn(
-            'No se pudo activar la linterna:',
-            e
+            'No se pudo controlar linterna:',
+            error
           );
+
+          torchActive =
+            false;
 
           return;
 
@@ -2051,7 +2530,6 @@
           'text-on-surface',
           !torchActive
         );
-
 
         torchOverlay.classList.toggle(
           'opacity-100',
@@ -2116,14 +2594,17 @@
 
             </div>
 
+
             <button
               type="button"
               id="close-new-product"
               class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center"
             >
+
               <span class="material-symbols-outlined">
                 close
               </span>
+
             </button>
 
           </div>
@@ -2201,7 +2682,7 @@
             <div>
 
               <label class="block text-xs text-on-surface-variant mb-1">
-                URL de imagen (opcional)
+                URL de imagen
               </label>
 
               <input
@@ -2260,7 +2741,9 @@
         'click',
         e => {
 
-          if (e.target === modal) {
+          if (
+            e.target === modal
+          ) {
 
             cerrarModalProducto();
 
@@ -2350,11 +2833,9 @@
       setTimeout(
         () => {
 
-          document
-            .getElementById(
-              'new-product-name'
-            )
-            .focus();
+          document.getElementById(
+            'new-product-name'
+          ).focus();
 
         },
         100
@@ -2376,9 +2857,9 @@
           'new-product-modal'
         );
 
-
-      if (!modal) return;
-
+      if (!modal) {
+        return;
+      }
 
       modal.classList.add(
         'hidden'
@@ -2408,7 +2889,6 @@
         document.getElementById(
           'save-new-product'
         );
-
 
       const errorEl =
         document.getElementById(
@@ -2440,8 +2920,7 @@
           Number(
             document.getElementById(
               'new-product-price'
-            ).value ||
-            0
+            ).value || 0
           ),
 
         imagen:
@@ -2453,7 +2932,9 @@
       };
 
 
-      if (!producto.nombre) {
+      if (
+        !producto.nombre
+      ) {
 
         errorEl.textContent =
           'El nombre es obligatorio.';
@@ -2494,7 +2975,7 @@
         ) {
 
           throw new Error(
-            'Configurá SUPABASE_URL y SUPABASE_ANON_KEY antes de guardar.'
+            'Configurá Supabase antes de guardar.'
           );
 
         }
@@ -2523,7 +3004,7 @@
 
         showToast(
           `${data.nombre} agregado`,
-          `Código ${data.codigo_barras} guardado en Supabase`,
+          `Código ${data.codigo_barras} guardado`,
           data.precio
         );
 
@@ -2535,24 +3016,25 @@
 
       } catch (error) {
 
-        console.error(error);
+        console.error(
+          error
+        );
 
 
         errorEl.textContent =
           error.code === '23505'
 
-            ? 'Ese código de barras ya existe en la base de datos.'
+            ? 'Ese código de barras ya existe.'
 
             : (
               error.message ||
-              'No se pudo guardar el producto.'
+              'No se pudo guardar.'
             );
 
 
         errorEl.classList.remove(
           'hidden'
         );
-
 
       } finally {
 
@@ -2665,7 +3147,8 @@
 
 
     /*
-     * Abrir automáticamente la cámara
+     * Abrir automáticamente
+     * la cámara trasera.
      */
 
     if (
